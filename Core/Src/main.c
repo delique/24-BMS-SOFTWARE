@@ -70,6 +70,7 @@ int8_t cvError = 0, auxError = 0;
 // TESTING
 float voltages[24];
 float temperatures[8];
+float convertedTemperatures[8];
 
 // TIMING
 uint16_t time, time2;
@@ -202,13 +203,14 @@ int main(void)
           temperatures[i + 4 * j] = bms_ic[j].aux.a_codes[i];
       }
       flagReadAuxConversion = false;
-    }
-    
-    // convert the temperature voltages into actual temperatures
 
+      // convert the temperature voltages into actual temperatures
+      convertTemperatures();
+    }
 
     // check the current
     // convert the current adc into actual current
+    // ignoring for prototype as won't have time to actually put a load onto the cells.
 
     // handle charging
 
@@ -621,6 +623,19 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     if (tim11counter++ > 65535)
       tim11counter = 0;
     HAL_TIM_Base_Start_IT(&htim6); // starts the next timer (TIM6)
+  }
+}
+
+void convertTemperatures()
+{
+  // iterate through voltage array
+  for (int i = 0; i < voltages.length; i++)
+  {
+    // convert the voltage to a temperature
+    // using the formula from the datasheet
+    // Vtemp = 0.0001 * adcValue
+    // T = (Vtemp - 0.5) / 0.01
+    convertedTemperatures[i] = (voltages[i] - 0.5) / 0.01;
   }
 }
 /* USER CODE END 4 */
