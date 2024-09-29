@@ -2,8 +2,9 @@
 #define LT_SPI_H
 
 #include <stdint.h>
+#include "main.h"
 
-#define LTC6811_CHIP_SELECT_GPIO_PIN            CS1_Pin    // D10
+#define LTC6811_CHIP_SELECT_GPIO_PIN            CS1_Pin    
 #define LTC6811_CHIP_SELECT_GPIO_PORT           CS1_GPIO_Port
 
 //Initialize the SPI Peripheral
