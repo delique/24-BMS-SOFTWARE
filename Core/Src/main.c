@@ -35,7 +35,10 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define OV 4.2
+#define UV 2.5
+#define OT 60
+#define UT -10
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -66,6 +69,10 @@ cell_asic bms_ic[TOTAL_IC];
 
 // ERROR
 int8_t cvError = 0, auxError = 0;
+uint8_t BMS_State_Out = 1;
+int NV[TOTAL_IC][12];
+int NT[TOTAL_IC][4];
+int NPEC_V = 0, NPEC_T = 0;
 
 // TESTING
 float voltages[24];
@@ -212,9 +219,17 @@ int main(void)
     // convert the current adc into actual current
     // ignoring for prototype as won't have time to actually put a load onto the cells.
 
-    // handle charging
+    // enable balancing
 
     // handle the fault output
+    if (!cvError && !auxError)
+    {
+      HAL_GPIO_WritePin(FAULT_GPIO_Port, FAULT_Pin, GPIO_PIN_SET);
+    }
+    else
+    {
+      HAL_GPIO_WritePin(FAULT_GPIO_Port, FAULT_Pin, GPIO_PIN_RESET);
+    }
   }
   /* USER CODE END 3 */
 }
@@ -637,6 +652,36 @@ void convertTemperatures()
     // T = (Vtemp - 0.5) / 0.01
     convertedTemperatures[i] = (voltages[i] - 0.5) / 0.01;
   }
+}
+
+void errorCheck()
+{
+  // check the voltages
+  for (int i = 0; i < voltages.length; i++)
+  {
+    if (voltages[i] > OV || voltages[i] < UV)
+    {
+      // raise an error
+      // set the BMS_State_Out to 0
+      BMS_State_Out = 0;
+    }
+  }
+
+  // check the temperatures
+  for (int i = 0; i < convertedTemperatures.length; i++)
+  {
+    if (convertedTemperatures[i] > OT || convertedTemperatures[i] < UT)
+    {
+      // raise an error
+      // set the BMS_State_Out to 0
+      BMS_State_Out = 0;
+    }
+  }
+
+  // check the current
+
+  // check the comms
+
 }
 /* USER CODE END 4 */
 
