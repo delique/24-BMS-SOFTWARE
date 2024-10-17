@@ -82,7 +82,14 @@ float convertedTemperatures[8];
 // TIMING
 uint16_t time, time2;
 uint16_t tim6counter = 0, tim7counter = 0, tim10counter = 0, tim11counter = 0;
-bool flagStartCVConversion = false, flagReadCVConversion = false, flagStartAuxConversion = false, flagReadAuxConversion = false;
+bool flagStartCVConversion = false, flagReadCVConversion = false, flagStartAuxConversion = false, flagReadAuxConversion = false, flagErrorCheck = false;
+
+// LTC CFG
+bool REFON = true;                                                                                    // determines the behaviour of the Vref pins, true means on
+bool ADCOPT = false;                                                                                  // chooses between the different frequency options, where adcopt = 0 allows 422hz, 27khz (fast), 7khz (normal), 26hz (filtered) and adcopt =  1 1khz, 14khz, 3khz, 2khz
+bool gpiox[5] = {false, false, false, false, false};                                                  // false is pulldown on and true is pulldown off
+bool dccx[12] = {false, false, false, false, false, false, false, false, false, false, false, false}; // balancing control when a true sets the S pin high
+bool dcto[4] = {false, false, false, false};                                                          // discharge timer, false is disabled
 
 /* USER CODE END PV */
 
@@ -153,8 +160,8 @@ int main(void)
   HAL_CAN_Init(&hcan1);
   HAL_CAN_Start(&hcan1);
 
-  // errorCounterInit
-  // LTC6811_init();
+  INIT_LTC6811();
+
   // start timers
 
   /* USER CODE END 2 */
@@ -217,9 +224,14 @@ int main(void)
 
     // check the current
     // convert the current adc into actual current
-    // ignoring for prototype as won't have time to actually put a load onto the cells.
 
-    // enable balancing
+    // balancing mode
+
+    if (flagErrorCheck)
+    {
+      errorCheck();
+      flagErrorCheck = false;
+    }
 
     // handle the fault output
     if (!cvError && !auxError)
@@ -230,6 +242,8 @@ int main(void)
     {
       HAL_GPIO_WritePin(FAULT_GPIO_Port, FAULT_Pin, GPIO_PIN_RESET);
     }
+
+    // SOC estimation/ Coloumb counting (not using the model)
   }
   /* USER CODE END 3 */
 }
@@ -635,16 +649,38 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     __HAL_TIM_CLEAR_IT(&htim11, TIM_IT_UPDATE); // clears the IT flag
     __HAL_TIM_SET_COUNTER(&htim11, 0);          // resets the timer's counter to 0
     flagReadAuxConversion = true;               // enables the read aux voltages code block
+    flagErrorCheck = true;
     if (tim11counter++ > 65535)
       tim11counter = 0;
     HAL_TIM_Base_Start_IT(&htim6); // starts the next timer (TIM6)
   }
 }
 
+void INIT_LTC6811()
+{
+  LTC681x_init_cfg(TOTAL_IC, bms_ic); // call the function from library to initialise the configuration variables
+
+  for (uint8_t i = 0; i < TOTAL_IC; i++)
+  {
+    // set the configuration variables for each IC
+    LTC681x_set_cfgr(i, bms_ic, REFON, ADCOPT, gpiox, dccx);
+  }
+
+  // reset the CRC count to 0
+  LTC681x_init_cfg(TOTAL_IC, bms_ic);
+  // init the limits specific to chip, i.e. LTC6813 or LTC6811
+  LTC6811_init_reg_limits(TOTAL_IC, bms_ic);
+  // write the cfg registers
+  wakeup_sleep(TOTAL_IC);
+  LTC681x_wrcfg(TOTAL_IC, bms_ic);
+}
+
 void convertTemperatures()
 {
   // iterate through voltage array
-  for (int i = 0; i < voltages.length; i++)
+  int voltages_length = sizeof(voltages) / sizeof(voltages[0]);
+
+  for (int i = 0; i < voltages_length; i++)
   {
     // convert the voltage to a temperature
     // using the formula from the datasheet
@@ -656,8 +692,11 @@ void convertTemperatures()
 
 void errorCheck()
 {
+  int voltages_length = sizeof(voltages) / sizeof(voltages[0]);
+  int temperatures_length = sizeof(convertedTemperatures) / sizeof(convertedTemperatures[0]);
+
   // check the voltages
-  for (int i = 0; i < voltages.length; i++)
+  for (int i = 0; i < voltages_length; i++)
   {
     if (voltages[i] > OV || voltages[i] < UV)
     {
@@ -668,7 +707,7 @@ void errorCheck()
   }
 
   // check the temperatures
-  for (int i = 0; i < convertedTemperatures.length; i++)
+  for (int i = 0; i < temperatures_length; i++)
   {
     if (convertedTemperatures[i] > OT || convertedTemperatures[i] < UT)
     {
@@ -681,7 +720,6 @@ void errorCheck()
   // check the current
 
   // check the comms
-
 }
 /* USER CODE END 4 */
 

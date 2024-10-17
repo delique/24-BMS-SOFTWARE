@@ -1,7 +1,6 @@
-../Core/Src/LT_SPI.c:9:6:LTC6811_Initialize	1
-../Core/Src/LT_SPI.c:38:6:cs_low	1
-../Core/Src/LT_SPI.c:44:6:cs_high	1
-../Core/Src/LT_SPI.c:49:6:spi_write	1
-../Core/Src/LT_SPI.c:55:6:spi_write_array	2
-../Core/Src/LT_SPI.c:69:6:spi_write_read	3
-../Core/Src/LT_SPI.c:94:9:spi_read_byte	2
+../Core/Src/LT_SPI.c:9:6:cs_low	1
+../Core/Src/LT_SPI.c:15:6:cs_high	1
+../Core/Src/LT_SPI.c:20:6:spi_write	1
+../Core/Src/LT_SPI.c:26:6:spi_write_array	2
+../Core/Src/LT_SPI.c:40:6:spi_write_read	3
+../Core/Src/LT_SPI.c:65:9:spi_read_byte	2

@@ -55,6 +55,7 @@ void Error_Handler(void);
 /* USER CODE BEGIN EFP */
 void convertTemperatures(void);
 void errorCheck(void);
+void INIT_LTC6811(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
